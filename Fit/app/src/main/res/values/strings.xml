@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">Fit</string>
+    <string name="profile">profile</string>
+    <string name="notifications">notifications</string>
+    <string name="collection">collection</string>
+    <string name="inbox">inbox</string>
+    <string name="orders">orders</string>
+    <string name="others">others</string>
+    <string name="settings">settings</string>
+    <string name="support">support</string>
+    <string name="about_us">about_us</string>
+    <string name="john_doe">john_doe</string>
+    <string name="verified">Verified</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="fit">Fit</string>
+    <string name="progress">Progress</string>
+    <string name="capture_food">Capture_Food</string>
+    <string name="capture">Capture</string>
+    <string name="camera">Camera</string>
+    <string name="daily_capture">Daily Capture</string>
+    <string name="gallary">Gallary</string>
+    <string name="user_fit_data">User Fit Data</string>
+    <string name="insert_date">Insert Date</string>
+    <string name="insert_calories_burnt">Insert Calories Burnt</string>
+    <string name="insert_steps_taken">Insert Steps Taken</string>
+    <string name="save">Save</string>
+    <string name="meal_information">Meal Information</string>
+    <string name="insert_weight">Insert Weight</string>
+    <string name="google_maps_API_key">AIzaSyDpjkzGMImny7hAdL-rarI10NAoIJqFSAQ</string>
+    <string name="NavigationMap" />
+
+
+</resources>
