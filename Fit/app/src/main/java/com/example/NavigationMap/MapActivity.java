@@ -9,6 +9,8 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.VoicemailContract;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -16,8 +18,10 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,21 +39,40 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.maps.DirectionsApiRequest;
+import com.google.maps.GeoApiContext;
+import com.google.maps.PendingResult;
+import com.google.maps.internal.PolylineEncoding;
+import com.google.maps.model.DirectionsResult;
+import com.google.maps.model.DirectionsRoute;
 
 import java.io.IOException;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnPolylineClickListener {
+    private String ApiKey = "AIzaSyDySPCwdauxqvmwHlTZ3DG9JMR6DCIB6gY";
+    private Location myLocation;
+    private LinearLayout LinearLayoutStartTripDetails, LinearlayoutInfo;
+    private GeoApiContext geoApiContext = null;
+    private  ArrayList<RoadPath> polylineDataList = new ArrayList<>();
+    private TextView TxtPlaceName, TxtRoute, TxtDuration, TxtDistance;
+    private Button BtnCancel;
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -70,7 +93,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             mMap.setPadding(0,200,0,0);
 
             init();
+            if(geoApiContext == null) {
+                geoApiContext = new GeoApiContext.Builder()
+                        .apiKey(ApiKey)
+                        .build();
+            }
        }
+        mMap.setOnPolylineClickListener(this);
     }
 
     private static final String TAG = "MapActivity";
@@ -94,33 +123,57 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-        mSearchText = (EditText) findViewById(R.id.input_search);
-        //mGps = (ImageView) findViewById(R.id.ic_gps);
-      getLocationPermission();
+        Places.initialize(getApplicationContext(), ApiKey);
+        TxtPlaceName = findViewById(R.id.TxtPlaceName);
+        TxtRoute= findViewById(R.id.TxtRoute);
+        TxtDuration= findViewById(R.id.TxtStarTime);
+        TxtDistance = findViewById(R.id.TxtDistance);
+        BtnCancel = findViewById(R.id.BtnCancel);
+        LinearLayoutStartTripDetails = findViewById(R.id.LinearLayoutStartTripDetails);
+        LinearlayoutInfo = findViewById(R.id.LinearlayoutInfo);
+        LinearLayoutStartTripDetails.setVisibility(View.GONE);
+        LinearlayoutInfo.setVisibility(View.GONE);
+        getLocationPermission();
+
 
       //initialze places
-/*
+        final AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
+        autocompleteFragment.setPlaceFields(Arrays.asList(com.google.android.libraries.places.api.model.Place.Field.ID, com.google.android.libraries.places.api.model.Place.Field.NAME));
 
-      Places.initialize(getApplicationContext(),"AIzaSyDpjkzGMImny7hAdL-rarI10NAoIJqFSAQ");
+        autocompleteFragment.setPlaceFields(Arrays.asList(com.google.android.libraries.places.api.model.Place.Field.ID, com.google.android.libraries.places.api.model.Place.Field.NAME, com.google.android.libraries.places.api.model.Place.Field.LAT_LNG));
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
 
-        //set EditText non focusable
-
-        mSearchText.setFocusable(false);
-        mSearchText.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                //Initialize place field list
-                List<Place.Field> fieldList = Arrays.asList(Place.Field.ADDRESS
-                ,Place.Field.LAT_LNG,Place.Field.NAME);
-                //Create intent
-                Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY
-                        ,fieldList).build(MapActivity.this);
-                //start activity result
-                startActivityForResult(intent, 100);
+            public void onPlaceSelected(@NonNull Place place) {
+                mMap.clear();
+                LatLng latLng = place.getLatLng();
+
+                LinearLayoutStartTripDetails.setVisibility(View.VISIBLE);
+
+                Marker marker = mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(place.getName()));
+                calculateDirections(marker);
+            }
+
+            @Override
+            public void onError(@NonNull Status status) {
+
             }
         });
- */
+
+        BtnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mMap.clear();
+                //polylineDataList.clear();
+                getLocationPermission();
+                LinearLayoutStartTripDetails.setVisibility(View.VISIBLE);
+                LinearlayoutInfo.setVisibility(View.GONE);
+            }
+        });
+
         }
 
         @Override
@@ -144,7 +197,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private void init(){
         Log.d(TAG, "init: initializing");
-
+/*
         mSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent KeyEvent){
@@ -158,7 +211,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 return false;
             }
         });
-/*
+
 
 
 mGps.setOnClickListener(new View.OnClickListener() {
@@ -168,7 +221,6 @@ mGps.setOnClickListener(new View.OnClickListener() {
         getDeviceLocation();
     }
     }); */
-       hideSoftKeyboard();
     }
     private void geoLocate(){
         Log.d(TAG, "geoLocate: geolocating");
@@ -206,7 +258,7 @@ mGps.setOnClickListener(new View.OnClickListener() {
                         if(task.isSuccessful()){
                             Log.d(TAG, "onComplete: Found Location!");
                             Location currentLocation = (Location) task.getResult();
-
+                            myLocation = currentLocation;
 
                             moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()),
                                     DEFAULT_ZOOM,
@@ -235,7 +287,6 @@ private void moveCamera(LatLng latLng, float zoom, String title) {
                 .title(title);
         mMap.addMarker(options);
     }
-    hideSoftKeyboard();
 }
     private void initMap(){
         Log.d(TAG, "iniMap: initializing map");
@@ -290,9 +341,125 @@ private void moveCamera(LatLng latLng, float zoom, String title) {
         }
     }
 
-private void hideSoftKeyboard(){
-    InputMethodManager imm = (InputMethodManager)
-            getSystemService(Context.INPUT_METHOD_SERVICE);
-    imm.hideSoftInputFromWindow(mSearchText.getWindowToken(),0);
-}
+    private void calculateDirections(Marker marker){
+        com.google.maps.model.LatLng destination = new com.google.maps.model.LatLng(
+                marker.getPosition().latitude,
+                marker.getPosition().longitude
+        );
+        DirectionsApiRequest directions = new DirectionsApiRequest(geoApiContext);
+
+        directions.alternatives(true);
+        directions.origin(
+                new com.google.maps.model.LatLng(
+                        myLocation.getLatitude(),
+                        myLocation.getLongitude()
+                )
+        );
+        //Log.d(TAG, "calculateDirections: destination: " + destination.toString());
+        directions.destination(destination).setCallback(new PendingResult.Callback<DirectionsResult>() {
+            @Override
+            public void onResult(DirectionsResult result) {
+                Log.d(TAG, "calculateDirections: routes: " + result.routes[0].toString());
+                Log.d(TAG, "calculateDirections: duration: " + result.routes[0].legs[0].duration);
+                Log.d(TAG, "calculateDirections: distance: " + result.routes[0].legs[0].distance);
+                Log.d(TAG, "calculateDirections: geocodedWayPoints: " + result.geocodedWaypoints[0].toString());
+
+                addPolylinesToMap(result);
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+
+            }
+        });
+    }
+
+    private void addPolylinesToMap(final DirectionsResult result){
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "run: result routes: " + result.routes.length);
+                if(polylineDataList.size()>0) {
+                    for (int i = 0; i < polylineDataList.size(); i++) {
+
+                        polylineDataList.get(i).getPolyline().remove();
+
+                    }
+
+                    polylineDataList.clear();
+                    polylineDataList = new ArrayList<>();
+
+                }
+                for(DirectionsRoute route: result.routes){
+                    Log.d(TAG, "run: leg: " + route.legs[0].toString());
+                    List<com.google.maps.model.LatLng> decodedPath = PolylineEncoding.decode(route.overviewPolyline.getEncodedPath());
+
+                    List<LatLng> newDecodedPath = new ArrayList<>();
+
+                    // This loops through all the LatLng coordinates of ONE polyline.
+                    for(com.google.maps.model.LatLng latLng: decodedPath){
+
+//                        Log.d(TAG, "run: latlng: " + latLng.toString());
+
+                        newDecodedPath.add(new LatLng(
+                                latLng.lat,
+                                latLng.lng
+                        ));
+                    }
+                    Polyline polyline = mMap.addPolyline(new PolylineOptions().addAll(newDecodedPath));
+                    polyline.setColor(ContextCompat.getColor(MapActivity.this, R.color.colorPrimaryDark));
+                    polyline.setClickable(true);
+                    polylineDataList.add(new RoadPath(polyline, route.legs[0]));
+
+                }
+
+                double QuickestTime = 999999999;
+                for (int i = 0; i < polylineDataList.size(); i++) {
+                    double currentDuration = polylineDataList.get(i).getLeg().duration.inSeconds;
+                    if(currentDuration<QuickestTime){
+                        QuickestTime = currentDuration;
+                        onPolylineClick(polylineDataList.get(i).getPolyline());
+                        //Zooms in on the current route
+                        //zoomRoute(polylineDataList.get(i).getPolyline().getPoints());
+
+                    }
+                }
+                LinearlayoutInfo.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    @Override
+    public void onPolylineClick(Polyline polyline) {
+        for (int i = 0; i < polylineDataList.size(); i++) {
+
+            Log.d(TAG, "onPolylineClick: toString: " + polylineDataList.toString());
+
+            if(polyline.getId().equals( polylineDataList.get(i).getPolyline().getId())){
+                polylineDataList.get(i).getPolyline().setColor(ContextCompat.getColor(this, R.color.colorAccent));
+                polylineDataList.get(i).getPolyline().setZIndex(1);
+
+                LatLng endLocatin = new LatLng(
+                        polylineDataList.get(i).getLeg().endLocation.lat,
+                        polylineDataList.get(i).getLeg().endLocation.lng
+                );
+
+                TxtPlaceName.setText(polylineDataList.get(i).getLeg().endAddress);
+                TxtRoute.setText("Route: " + (i + 1));
+                TxtDuration.setText(polylineDataList.get(i).getLeg().duration.toString());
+
+                TxtDistance.setText(polylineDataList.get(i).getLeg().distance.toString());
+
+                Marker marker = mMap.addMarker(new MarkerOptions()
+                        .position(endLocatin)
+                        .title("Trip: " + (i+1))
+                        .snippet("Length: " + polylineDataList.get(i).getLeg().duration)
+                );
+                marker.showInfoWindow();
+            }else{
+                polylineDataList.get(i).getPolyline().setColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+                polylineDataList.get(i).getPolyline().setZIndex(0);
+            }
+        }
+    }
 }

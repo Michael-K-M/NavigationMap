@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -10,7 +11,6 @@
         android:id="@+id/map"
         tools:context=".MapsActivity"
         android:name="com.google.android.gms.maps.SupportMapFragment" />
-
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -22,27 +22,79 @@
         android:background="@drawable/white_border"
         android:id="@+id/relLayout">
 
-        <ImageView
-            android:layout_width="15dp"
-            android:layout_height="15dp"
-            android:id="@+id/ic_magnify"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="10dp"
-            android:src="@drawable/ic_magnify"/>
-        <EditText
+        <fragment
+            android:id="@+id/autocomplete_fragment"
+            android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_toRightOf="@id/ic_magnify"
-            android:layout_centerVertical="true"
-            android:textSize="15sp"
-            android:textColor="#000"
-            android:id="@+id/input_search"
-            android:background="@null"
-            android:singleLine="true"
-            android:hint="Enter Address, City or ZIP Code"
-            />
+            android:layout_height="wrap_content" />
 
     </RelativeLayout>
+    <ImageView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_below="@+id/relLayout"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:scaleType="centerCrop"
+        android:id="@+id/ic_gps"
+        android:src="@drawable/ic_gps"
+        />
+    <LinearLayout
+        android:id="@+id/LinearlayoutInfo"
+        android:layout_width="match_parent"
+        android:background="@color/colorAccent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="center"
+        android:orientation="vertical">
 
+        <LinearLayout
+            android:id="@+id/LinearLayoutStartTripDetails"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/TxtPlaceName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:text="Name"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/TxtDistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Distance" />
+
+            <TextView
+                android:id="@+id/TxtStarTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Duration" />
+
+            <TextView
+                android:id="@+id/TxtRoute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Route" />
+
+            <Button
+                android:id="@+id/BtnCancel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cancel" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </RelativeLayout>
